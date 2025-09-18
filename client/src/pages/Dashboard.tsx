@@ -57,6 +57,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
+          const colorClasses = {
+            jade: { bg: 'bg-jade/10', text: 'text-jade' },
+            sunglow: { bg: 'bg-sunglow/10', text: 'text-sunglow' },
+            pumpkin: { bg: 'bg-pumpkin/10', text: 'text-pumpkin' },
+            icterine: { bg: 'bg-icterine/10', text: 'text-icterine' },
+          };
+          const colorClass = colorClasses[stat.color as keyof typeof colorClasses];
           return (
             <Card key={index} data-testid={`card-stat-${stat.label.toLowerCase().replace(/\s+/g, '-')}`}>
               <CardContent className="p-6">
@@ -67,8 +74,8 @@ export default function Dashboard() {
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`w-12 h-12 bg-${stat.color}/10 rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 text-${stat.color}`} />
+                  <div className={`w-12 h-12 ${colorClass.bg} rounded-lg flex items-center justify-center`}>
+                    <Icon className={`w-6 h-6 ${colorClass.text}`} />
                   </div>
                 </div>
               </CardContent>
@@ -103,7 +110,12 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center space-x-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${assessment.statusColor}/10 text-${assessment.statusColor}`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      assessment.statusColor === 'jade' ? 'bg-jade/10 text-jade' :
+                      assessment.statusColor === 'sunglow' ? 'bg-sunglow/10 text-sunglow' :
+                      assessment.statusColor === 'pumpkin' ? 'bg-pumpkin/10 text-pumpkin' :
+                      'bg-icterine/10 text-icterine'
+                    }`}
                     data-testid={`status-${assessment.id}`}
                   >
                     {assessment.status}
