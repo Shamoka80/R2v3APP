@@ -10,4 +10,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Models will be added here in future iterations
+model StandardVersion {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+  clauses  Clause[]
+}
+
+model Clause {
+  id       String @id @default(cuid())
+  ref      String @unique
+  title    String
+  stdId    String
+  standard StandardVersion @relation(fields: [stdId], references: [id])
+  questions Question[]
+}
+
+model Question {
+  id               String  @id @default(cuid())
+  questionId       String  @unique
+  clauseId         String
+  text             String
+  responseType     String
+  required         Boolean @default(false)
+  evidenceRequired Boolean @default(false)
+  appendix         String?
+  weight           Float   @default(1)
+  helpText         String?
+  clause           Clause  @relation(fields: [clauseId], references: [id])
+}
