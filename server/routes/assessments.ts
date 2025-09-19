@@ -65,10 +65,10 @@ router.get("/:id/questions", async (req, res) => {
       return res.status(404).json({ error: "Assessment not found" });
     }
     
-    const groups = assessment.standard.clauses.map(clause => ({
+    const groups = assessment.standard.clauses.map((clause: any) => ({
       clauseRef: clause.ref,
       clauseTitle: clause.title,
-      questions: clause.questions.map(question => ({
+      questions: clause.questions.map((question: any) => ({
         id: question.id,
         questionId: question.questionId,
         text: question.text,
@@ -82,9 +82,9 @@ router.get("/:id/questions", async (req, res) => {
       }))
     }));
     
-    const totalQuestions = groups.reduce((sum, group) => sum + group.questions.length, 0);
-    const requiredCount = groups.reduce((sum, group) => 
-      sum + group.questions.filter(q => q.required).length, 0);
+    const totalQuestions = groups.reduce((sum: number, group: any) => sum + group.questions.length, 0);
+    const requiredCount = groups.reduce((sum: number, group: any) => 
+      sum + group.questions.filter((q: any) => q.required).length, 0);
     
     res.json({
       assessmentId: assessment.id,
