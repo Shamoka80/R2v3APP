@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model StandardVersion {
@@ -38,5 +39,8 @@ model Question {
   appendix         String?
   weight           Float   @default(1)
   helpText         String?
+  category         String?
+  category_code    String?
+  category_name    String?
   clause           Clause  @relation(fields: [clauseId], references: [id])
 }

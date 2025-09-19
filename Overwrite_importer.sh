@@ -1,3 +1,5 @@
+# Overwrite importer with clause normalization from category_code/category/text
+cat > ~/workspace/server/tools/import-questions.ts <<'TS'
 import "dotenv/config";
 import fs from "fs";
 import { parse as parseSync } from "csv-parse/sync";
@@ -10,7 +12,6 @@ const HEADERS = {
   clause_ref: ["clause_ref","clause","requirement","citation","Clause","R2 Clause","Clause Reference","Reference","Ref"],
   category_code: ["category_code","Category Code"],
   category: ["category","Category"],
-  category_name: ["category_name","Category Name"],
   text: ["text","question","prompt","Question Text","Question"],
   response_type: ["response_type","type","answer_type","input_type","Response Type","Type"],
   required: ["required","is_required","mandatory","Required"],
@@ -112,9 +113,6 @@ async function main() {
     const appendix = String(pick(row, HEADERS.appendix) ?? "").trim().toUpperCase() || null;
     const weight = Number(pick(row, HEADERS.weight) ?? 1);
     const helpText = String(pick(row, HEADERS.help_text) ?? "");
-    const category = String(pick(row, HEADERS.category) ?? "").trim() || null;
-    const category_code = String(pick(row, HEADERS.category_code) ?? "").trim() || null;
-    const category_name = String(pick(row, HEADERS.category_name) ?? "").trim() || null;
 
     if (!clauseRefNorm) missingClause.push(qid || text.slice(0,50));
 
@@ -132,21 +130,26 @@ async function main() {
 
     await prisma.question.upsert({
       where: { questionId: qid || `${clause.id}-${total}` },
-      update: { clauseId: clause.id, text, responseType, required, evidenceRequired, appendix, weight, helpText, category, category_code, category_name },
-      create: { questionId: qid || `${clause.id}-${total}`, clauseId: clause.id, text, responseType, required, evidenceRequired, appendix, weight, helpText, category, category_code, category_name }
+      update: { clauseId: clause.id, text, responseType, required, evidenceRequired, appendix, weight, helpText },
+      create: { questionId: qid || `${clause.id}-${total}`, clauseId: clause.id, text, responseType, required, evidenceRequired, appendix, weight, helpText }
     });
 
     const bucket = classifyBucket(clauseRefNorm || undefined);
     counts[bucket] = (counts[bucket] || 0) + 1;
   }
 
-  const keys = ["CR1","CR2","CR3","CR4","CR5","CR6","CR7","CR8","CR9","CR10","APP-A","APP-B","APP-C","APP-D","APP-E","APP-F","APP-G"];
+  const keys = ["CR1","CR2","CR3","CR4","CR5","CR6","CR7","CR8","CR9","CR10","APP-A","APP-B","APP-C","APP-D","APP-E","APP-F","APP-G","UNSPECIFIED","OTHER"];
   console.log("=== Coverage ===");
   for (const k of keys) console.log(`${k.padEnd(10)} : ${counts[k] || 0}`);
-  console.log(`${"Preparation/Meta".padEnd(10)} : ${counts.UNSPECIFIED || 0}`);
   console.log("Missing clause refs:", missingClause.length);
   console.log("Duplicate explicit question_ids:", duplicates);
   console.log("Total imported:", total);
 }
 
 main().then(()=>process.exit(0)).catch(e=>{ console.error(e); process.exit(1); });
+TS
+
+# Re-run the importer (updates existing Question rows by questionId)
+cd ~/workspace/server
+npx ts-node --project tsconfig.json tools/import-questions.ts ../questions.csv 2>&1 | tee ../importer.log
+tail -n 40 ../importer.log
