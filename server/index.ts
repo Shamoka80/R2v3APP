@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -29,7 +29,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(`[express] ${logLine}`);
     }
   });
 
@@ -47,29 +47,13 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Serve frontend - force static serving to avoid setupVite import.meta.dirname compatibility issue
-  try {
-    // Always use serveStatic to bypass import.meta.dirname issue in setupVite
-    serveStatic(app);
-  } catch (error) {
-    console.error('Frontend serving failed, falling back to simple HTML:', (error as Error).message);
-    // Fallback when both setupVite and serveStatic fail
-    app.get('*', (_req, res) => {
-      res.type('html').send(`
-        <html>
-          <head><title>RUR2 - Loading...</title></head>
-          <body>
-            <h1>RUR2 Application</h1>
-            <p>Frontend temporarily unavailable. API is running on <a href="/api/health">/api/health</a></p>
-            <script>
-              // Auto-reload in case frontend becomes available
-              setTimeout(() => location.reload(), 5000);
-            </script>
-          </body>
-        </html>
-      `);
-    });
-  }
+  const distDir = path.resolve(__dirname, "../client/dist");
+  app.use(express.static(distDir));
+  // SPA fallback for non-API routes
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(distDir, "index.html"));
+  });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
@@ -81,6 +65,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    console.log(`[express] serving on port ${port}`);
   });
 })();
