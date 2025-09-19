@@ -70,6 +70,13 @@ router.get('/:id/questions', async (req, res) => {
     orderBy: [{ clause: { ref: 'asc' } }, { questionId: 'asc' }]
   });
 
+  // Before grouping, fetch current answers (map by Question.questionId, not Question.id)
+  const existing = await prisma.answer.findMany({
+    where: { assessmentId: a.id },
+    select: { questionId: true, value: true, question: { select: { questionId: true } } }
+  });
+  const aMap = new Map(existing.map(x => [x.question.questionId, x.value]));
+
   // Group by clause.ref
   const map = new Map<string, { clauseRef: string; clauseTitle: string; questions: any[] }>();
   for (const q of qs) {
@@ -77,7 +84,7 @@ router.get('/:id/questions', async (req, res) => {
     const title = q.clause?.title ?? 'Unspecified';
     if (!map.has(ref)) map.set(ref, { clauseRef: ref, clauseTitle: title, questions: [] });
     const { clause, ...rest } = q as any;
-    map.get(ref)!.questions.push(rest);
+    map.get(ref)!.questions.push({ ...rest, answer: aMap.get(rest.questionId) ?? null });
   }
 
   const groups = Array.from(map.values());

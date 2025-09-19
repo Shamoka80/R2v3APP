@@ -23,6 +23,7 @@ interface Question {
   category: string | null;
   category_code: string | null;
   category_name: string | null;
+  answer: any; // Answer from backend (JSON value)
 }
 
 interface ClauseGroup {
@@ -70,6 +71,18 @@ export default function QuestionsTab() {
         setLoading(true);
         const data = await apiGet<QuestionsResponse>(`/api/assessments/${assessmentId}/questions`);
         setQuestionsData(data);
+        
+        // Initialize answers from backend data
+        const initialAnswers: Record<string, string> = {};
+        data.groups.forEach(group => {
+          group.questions.forEach(question => {
+            if (question.answer !== null && question.answer !== undefined) {
+              initialAnswers[question.questionId] = String(question.answer);
+            }
+          });
+        });
+        setAnswers(initialAnswers);
+        
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load questions');
