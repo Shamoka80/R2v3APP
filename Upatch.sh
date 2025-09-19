@@ -1,3 +1,5 @@
+# Overwrite server/tools/import-questions.ts with a proper export + CLI guard
+cat > ~/workspace/server/tools/import-questions.ts <<'TS'
 import "dotenv/config";
 import fs from "fs";
 import { parse as parseSync } from "csv-parse/sync";
@@ -153,3 +155,4 @@ if (typeof require !== "undefined" && require.main === module) {
     .then(printCoverage)
     .catch(e => { console.error(e); process.exit(1); });
 }
+TS
