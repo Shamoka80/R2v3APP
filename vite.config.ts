@@ -1,5 +1,3 @@
-# From repo root
-cat > vite.config.ts <<'TS'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -15,7 +13,3 @@ export default defineConfig({
     port: 5173
   }
 })
-TS
-
-# Ensure the plugin is present in the client
-npm --prefix client i -D @vitejs/plugin-react@latest
