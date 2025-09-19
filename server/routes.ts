@@ -23,10 +23,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export routes
   app.use("/api/exports", exportsRouter);
 
-  // Safe root fallback for Replit preview
-  app.get('/', (_req, res) => {
-    res.type('html').send('<h1>RUR2 API</h1><p>OK</p><p><a href="/api/health">/api/health</a></p>');
-  });
+  // API-only fallback when UI is disabled
+  if (process.env.UI_DISABLED === '1') {
+    app.get('/', (_req, res) => {
+      res.type('html').send('<h1>RUR2 API</h1><p>OK</p><p><a href="/api/health">/api/health</a></p>');
+    });
+  }
 
   const httpServer = createServer(app);
   return httpServer;

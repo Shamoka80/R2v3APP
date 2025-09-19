@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -28,7 +29,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      console.log(`[express] ${logLine}`);
+      log(logLine);
     }
   });
 
@@ -46,6 +47,32 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // Serve frontend - temporarily force static serving to avoid setupVite import.meta.dirname issue
+  try {
+    if (process.env.NODE_ENV === 'development' && process.env.FORCE_STATIC !== '1') {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+  } catch (error) {
+    console.error('Vite middleware failed, falling back to simple HTML:', error.message);
+    // Fallback when both setupVite and serveStatic fail
+    app.get('*', (_req, res) => {
+      res.type('html').send(`
+        <html>
+          <head><title>RUR2 - Loading...</title></head>
+          <body>
+            <h1>RUR2 Application</h1>
+            <p>Frontend temporarily unavailable. API is running on <a href="/api/health">/api/health</a></p>
+            <script>
+              // Auto-reload in case frontend becomes available
+              setTimeout(() => location.reload(), 5000);
+            </script>
+          </body>
+        </html>
+      `);
+    });
+  }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
@@ -57,6 +84,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    console.log(`[express] serving on port ${port}`);
+    log(`serving on port ${port}`);
   });
 })();
