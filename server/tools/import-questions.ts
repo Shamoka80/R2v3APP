@@ -1,7 +1,15 @@
+
 import "dotenv/config";
 import fs from "fs";
 import { parse as parseSync } from "csv-parse/sync";
 import { PrismaClient } from "@prisma/client";
+
+export type ImportCoverage = {
+  counts: Record<string, number>;
+  missingCount: number;
+  duplicateCount: number;
+  total: number;
+};
 
 const prisma = new PrismaClient();
 
@@ -20,63 +28,47 @@ const HEADERS = {
   help_text: ["help_text","help","guidance","Help Text","Guidance","compliance_expectation","Compliance Expectation"]
 };
 
-function pick(row: any, keys: string[]) {
+const pick = (row: any, keys: string[]) => {
   const cols = Object.keys(row);
   for (const k of keys) {
     const hit = cols.find(c => c.trim().toLowerCase() === k.trim().toLowerCase());
     if (hit) return row[hit];
   }
   return undefined;
-}
+};
 
-function normalizeClauseRef(src?: string|null): string|null {
+const normalizeClauseRef = (src?: string|null): string|null => {
   if (!src) return null;
   const s = String(src).trim().toUpperCase().replace(/\s+/g, " ");
-  // CORE REQUIREMENT N → CRN
-  let m = s.match(/^CORE\s+REQUIREMENT\s+(\d{1,2})/);
-  if (m) return `CR${Number(m[1])}`;
-  // CRN / CR N
-  m = s.match(/^CR\W*\s*(\d{1,2})/);
-  if (m) return `CR${Number(m[1])}`;
-  // APPENDIX X
-  m = s.match(/^APPENDIX\s+([A-G])/);
-  if (m) return `APP-${m[1]}`;
-  // APP X / APP-X
-  m = s.match(/^APP(?:ENDIX)?\W*([A-G])/);
-  if (m) return `APP-${m[1]}`;
+  let m = s.match(/^CORE\s+REQUIREMENT\s+(\d{1,2})/); if (m) return `CR${Number(m[1])}`;
+  m = s.match(/^CR\W*\s*(\d{1,2})/); if (m) return `CR${Number(m[1])}`;
+  m = s.match(/^APPENDIX\s+([A-G])/); if (m) return `APP-${m[1]}`;
+  m = s.match(/^APP(?:ENDIX)?\W*([A-G])/); if (m) return `APP-${m[1]}`;
+  m = s.match(/\bCR\W*([0-9]{1,2})\b/); if (m) return `CR${Number(m[1])}`;
+  m = s.match(/\bAPP(?:ENDIX)?\W*([A-G])\b/); if (m) return `APP-${m[1]}`;
   return null;
-}
+};
 
-function deriveClause(row: any): string|null {
-  const fromClause = normalizeClauseRef(pick(row, HEADERS.clause_ref));
-  if (fromClause) return fromClause;
-  const fromCode = normalizeClauseRef(pick(row, HEADERS.category_code));
-  if (fromCode) return fromCode;
-  const fromCat = normalizeClauseRef(pick(row, HEADERS.category));
-  if (fromCat) return fromCat;
-  // Last resort: scan question text
-  const text = String(pick(row, HEADERS.text) ?? "").toUpperCase();
-  let m = text.match(/\bCR\s*([0-9]{1,2})\b/);
-  if (m) return `CR${Number(m[1])}`;
-  m = text.match(/\bAPP(?:ENDIX)?\s*([A-G])\b/);
-  if (m) return `APP-${m[1]}`;
-  return null;
-}
+const deriveClause = (row: any): string|null => {
+  return (
+    normalizeClauseRef(pick(row, HEADERS.clause_ref)) ??
+    normalizeClauseRef(pick(row, HEADERS.category_code)) ??
+    normalizeClauseRef(pick(row, HEADERS.category)) ??
+    null
+  );
+};
 
-function classifyBucket(ref?: string|null) {
+const classifyBucket = (ref?: string|null) => {
   if (!ref) return "UNSPECIFIED";
   const u = ref.toUpperCase();
   if (/^CR([1-9]|10)$/.test(u)) return u;
-  const m = u.match(/^APP-([A-G])$/);
-  if (m) return `APP-${m[1]}`;
+  const m = u.match(/^APP-([A-G])$/); if (m) return `APP-${m[1]}`;
   return "OTHER";
-}
+};
 
-async function main() {
-  const file = process.argv[2];
+export async function importQuestions(file: string): Promise<ImportCoverage> {
   if (!file || !fs.existsSync(file)) {
-    console.error("Usage: ts-node server/tools/import-questions.ts <path-to-csv>");
-    process.exit(2);
+    throw new Error("CSV path missing or not found");
   }
 
   const std = await prisma.standardVersion.upsert({
@@ -86,21 +78,18 @@ async function main() {
   });
 
   const raw = fs.readFileSync(file, "utf8");
-  const delim = (() => {
-    const l = raw.split(/\r?\n/)[0] ?? "";
-    const cand = [",",";","\t","|"].map(d => ({d, n: (l.match(new RegExp("\\"+d,"g"))||[]).length}));
-    cand.sort((a,b)=>b.n-a.n);
-    return (cand[0]?.n ?? 0) > 0 ? cand[0].d : ",";
-  })();
+  const first = raw.split(/\r?\n/)[0] ?? "";
+  const delim = [",",";","\t","|"]
+    .map(d => ({ d, n: (first.match(new RegExp("\\"+d,"g"))||[]).length }))
+    .sort((a,b)=>b.n-a.n)[0].d;
 
-  const records: any[] = parseSync(raw, { columns: true, skip_empty_lines: true, delimiter: delim });
+  const rows: any[] = parseSync(raw, { columns: true, skip_empty_lines: true, delimiter: delim });
 
   const counts: Record<string, number> = {};
-  const missingClause: string[] = [];
   const seenQIDs = new Set<string>();
-  let duplicates = 0, total = 0;
+  let missing = 0, dups = 0, total = 0;
 
-  for (const row of records) {
+  for (const row of rows) {
     total++;
 
     const qid = String(pick(row, HEADERS.question_id) ?? "").trim();
@@ -112,13 +101,14 @@ async function main() {
     const appendix = String(pick(row, HEADERS.appendix) ?? "").trim().toUpperCase() || null;
     const weight = Number(pick(row, HEADERS.weight) ?? 1);
     const helpText = String(pick(row, HEADERS.help_text) ?? "");
-    const category = String(pick(row, HEADERS.category) ?? "").trim() || null;
-    const category_code = String(pick(row, HEADERS.category_code) ?? "").trim() || null;
-    const category_name = String(pick(row, HEADERS.category_name) ?? "").trim() || null;
 
-    if (!clauseRefNorm) missingClause.push(qid || text.slice(0,50));
+    const category = String(pick(row, HEADERS.category) ?? "") || null;
+    const category_code = String(pick(row, HEADERS.category_code) ?? "") || null;
+    const category_name = String(pick(row, HEADERS.category_name) ?? "") || null;
 
-    const clauseRefKey = clauseRefNorm || "UNSPEC"; // single UNSPEC clause
+    if (!clauseRefNorm) missing++;
+
+    const clauseRefKey = clauseRefNorm || "UNSPEC";
     const clause = await prisma.clause.upsert({
       where: { ref: clauseRefKey },
       update: { title: clauseRefNorm || "Unspecified", stdId: std.id },
@@ -126,7 +116,7 @@ async function main() {
     });
 
     if (qid) {
-      if (seenQIDs.has(qid)) duplicates++;
+      if (seenQIDs.has(qid)) dups++;
       seenQIDs.add(qid);
     }
 
@@ -140,13 +130,27 @@ async function main() {
     counts[bucket] = (counts[bucket] || 0) + 1;
   }
 
-  const keys = ["CR1","CR2","CR3","CR4","CR5","CR6","CR7","CR8","CR9","CR10","APP-A","APP-B","APP-C","APP-D","APP-E","APP-F","APP-G"];
-  console.log("=== Coverage ===");
-  for (const k of keys) console.log(`${k.padEnd(10)} : ${counts[k] || 0}`);
-  console.log(`${"Preparation/Meta".padEnd(10)} : ${counts.UNSPECIFIED || 0}`);
-  console.log("Missing clause refs:", missingClause.length);
-  console.log("Duplicate explicit question_ids:", duplicates);
-  console.log("Total imported:", total);
+  return { counts, missingCount: missing, duplicateCount: dups, total };
 }
 
-main().then(()=>process.exit(0)).catch(e=>{ console.error(e); process.exit(1); });
+function printCoverage(c: ImportCoverage) {
+  const keys = ["CR1","CR2","CR3","CR4","CR5","CR6","CR7","CR8","CR9","CR10","APP-A","APP-B","APP-C","APP-D","APP-E","APP-F","APP-G","UNSPECIFIED","OTHER"];
+  console.log("=== Coverage ===");
+  for (const k of keys) console.log(`${k.padEnd(10)} : ${c.counts[k] || 0}`);
+  console.log("Preparation/Meta :", c.counts["UNSPECIFIED"] || 0);
+  console.log("Missing clause refs:", c.missingCount);
+  console.log("Duplicate explicit question_ids:", c.duplicateCount);
+  console.log("Total imported:", c.total);
+}
+
+// Run as CLI only when executed directly, not when imported by the server
+if (typeof require !== "undefined" && require.main === module) {
+  const file = process.argv[2];
+  if (!file) {
+    console.error("Usage: ts-node server/tools/import-questions.ts <path-to-csv>");
+    process.exit(2);
+  }
+  importQuestions(file)
+    .then(printCoverage)
+    .catch(e => { console.error(e); process.exit(1); });
+}
