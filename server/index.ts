@@ -47,15 +47,12 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Serve frontend - temporarily force static serving to avoid setupVite import.meta.dirname issue
+  // Serve frontend - force static serving to avoid setupVite import.meta.dirname compatibility issue
   try {
-    if (process.env.NODE_ENV === 'development' && process.env.FORCE_STATIC !== '1') {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
+    // Always use serveStatic to bypass import.meta.dirname issue in setupVite
+    serveStatic(app);
   } catch (error) {
-    console.error('Vite middleware failed, falling back to simple HTML:', error.message);
+    console.error('Frontend serving failed, falling back to simple HTML:', (error as Error).message);
     // Fallback when both setupVite and serveStatic fail
     app.get('*', (_req, res) => {
       res.type('html').send(`
