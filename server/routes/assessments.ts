@@ -42,60 +42,55 @@ router.post("/", async (req, res) => {
 });
 
 // GET /api/assessments/:id/questions
-router.get("/:id/questions", async (req, res) => {
-  try {
-    const assessmentId = req.params.id;
-    
-    const assessment = await prisma.assessment.findUnique({
-      where: { id: assessmentId },
-      include: {
-        standard: {
-          include: {
-            clauses: {
-              include: {
-                questions: true
-              }
-            }
-          }
-        }
-      }
-    });
-    
-    if (!assessment) {
-      return res.status(404).json({ error: "Assessment not found" });
-    }
-    
-    const groups = assessment.standard.clauses.map((clause: any) => ({
-      clauseRef: clause.ref,
-      clauseTitle: clause.title,
-      questions: clause.questions.map((question: any) => ({
-        id: question.id,
-        questionId: question.questionId,
-        text: question.text,
-        required: question.required,
-        evidenceRequired: question.evidenceRequired,
-        responseType: question.responseType,
-        appendix: question.appendix,
-        category: question.category,
-        category_code: question.category_code,
-        category_name: question.category_name
-      }))
-    }));
-    
-    const totalQuestions = groups.reduce((sum: number, group: any) => sum + group.questions.length, 0);
-    const requiredCount = groups.reduce((sum: number, group: any) => 
-      sum + group.questions.filter((q: any) => q.required).length, 0);
-    
-    res.json({
-      assessmentId: assessment.id,
-      standardCode: assessment.standard.code,
-      groups,
-      totalQuestions,
-      requiredCount
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+router.get('/:id/questions', async (req, res) => {
+  const { id } = req.params;
+
+  const a = await prisma.assessment.findUnique({
+    where: { id },
+    select: { id: true, stdId: true, standard: { select: { code: true } } }
+  });
+  if (!a) return res.status(404).json({ error: 'Assessment not found' });
+
+  // Pull all questions linked to this assessment's standard by joining via Clause
+  const qs = await prisma.question.findMany({
+    where: { clause: { stdId: a.stdId } },
+    select: {
+      id: true,
+      questionId: true,
+      text: true,
+      required: true,
+      evidenceRequired: true,
+      responseType: true,
+      appendix: true,
+      category: true,
+      category_code: true,
+      category_name: true,
+      clause: { select: { ref: true, title: true } }
+    },
+    orderBy: [{ clause: { ref: 'asc' } }, { questionId: 'asc' }]
+  });
+
+  // Group by clause.ref
+  const map = new Map<string, { clauseRef: string; clauseTitle: string; questions: any[] }>();
+  for (const q of qs) {
+    const ref = q.clause?.ref ?? 'UNSPEC';
+    const title = q.clause?.title ?? 'Unspecified';
+    if (!map.has(ref)) map.set(ref, { clauseRef: ref, clauseTitle: title, questions: [] });
+    const { clause, ...rest } = q as any;
+    map.get(ref)!.questions.push(rest);
   }
+
+  const groups = Array.from(map.values());
+  const totalQuestions = qs.length;
+  const requiredCount = qs.filter(q => q.required).length;
+
+  res.json({
+    assessmentId: a.id,
+    standardCode: a.standard?.code ?? null,
+    groups,
+    totalQuestions,
+    requiredCount
+  });
 });
 
 
