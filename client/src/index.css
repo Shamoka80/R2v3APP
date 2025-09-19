@@ -80,10 +80,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(229, 231, 235);
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    background-color: white;
+    color: rgb(31, 41, 55);
   }
 }
