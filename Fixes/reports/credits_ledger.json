@@ -1,14 +1,41 @@
-[
-  {
-    "type": "purchase",
-    "amount": 1000,
-    "ref": "seed_purchase",
-    "ts": "2025-01-01T00:00:00Z"
-  },
-  {
-    "type": "consume",
-    "amount": -100,
-    "ref": "seed_consume",
-    "ts": "2025-01-01T00:05:00Z"
-  }
-]
+{
+  "entries": [
+    {
+      "seq": "1",
+      "type": "purchase",
+      "amount": 1000,
+      "ref": "seed_purchase"
+    },
+    {
+      "seq": "2",
+      "type": "consume",
+      "amount": -100,
+      "ref": "seed_consume"
+    },
+    {
+      "seq": "3",
+      "type": "purchase",
+      "amount": 100,
+      "ref": "test_purchase"
+    },
+    {
+      "seq": "4",
+      "type": "issue",
+      "amount": 100,
+      "ref": "credit_issue"
+    },
+    {
+      "seq": "5",
+      "type": "consume",
+      "amount": 25,
+      "ref": "usage_1"
+    },
+    {
+      "seq": "6",
+      "type": "adjust+",
+      "amount": 10,
+      "ref": "admin_adjust"
+    }
+  ],
+  "balance": 185
+}
