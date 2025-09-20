@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info: {title: RUR2 Credits API, version: "0.1.0"}
+paths:
+  /credits:
+    get:
+      summary: Get current credit balance and history
+      responses:
+        "200": {description: OK}
+  /admin/credits/adjust:
+    post:
+      summary: Admin adjust credits (±)
+      responses:
+        "200": {description: OK}
+  /stripe/webhook:
+    post:
+      summary: Stripe webhook (checkout/session + invoice events)
+      responses:
+        "200": {description: OK}
