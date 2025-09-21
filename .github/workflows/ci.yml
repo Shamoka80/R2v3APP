@@ -1,5 +1,7 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -7,8 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build release
         run: bash phase7_release.sh
-
-- name: Cold verify
+      - name: Cold verify
         run: bash coldver.sh
-      - name: Phases 0–5 E2E
+      - name: Phases 0-5 E2E
         run: bash e2e_0_5.sh
