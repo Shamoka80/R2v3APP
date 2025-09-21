@@ -37,28 +37,48 @@
       "ts": ""
     },
     {
-      "seq": "7",
       "type": "purchase",
-      "amount": 100,
-      "ref": "test_purchase"
+      "amount": 100.0,
+      "ref": "test_purchase",
+      "ts": ""
     },
     {
-      "seq": "8",
       "type": "issue",
-      "amount": 100,
-      "ref": "credit_issue"
+      "amount": 100.0,
+      "ref": "credit_issue",
+      "ts": ""
     },
     {
-      "seq": "9",
       "type": "consume",
-      "amount": 25,
-      "ref": "usage_1"
+      "amount": 25.0,
+      "ref": "usage_1",
+      "ts": ""
     },
     {
-      "seq": "10",
       "type": "adjust+",
-      "amount": 10,
-      "ref": "admin_adjust"
+      "amount": 10.0,
+      "ref": "admin_adjust",
+      "ts": ""
+    },
+    {
+      "type": "purchase",
+      "amount": 600.0,
+      "ref": "E2E_PHASE5_SCENARIO"
+    },
+    {
+      "type": "adjust",
+      "amount": 100.0,
+      "ref": "E2E_PHASE5_SCENARIO"
+    },
+    {
+      "type": "consume",
+      "amount": -1500.0,
+      "ref": "E2E_PHASE5_SCENARIO"
+    },
+    {
+      "type": "refund",
+      "amount": -65.0,
+      "ref": "E2E_PHASE5_SCENARIO"
     }
   ],
   "balance": 270.0
