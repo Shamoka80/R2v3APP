@@ -10,3 +10,6 @@ vite.config.ts.*
 
 !Fixes/pdf_temp_export.pdf
 !Fixes/email_temp_export.pdf
+
+!Fixes/pdf_temp_export.pdf
+!Fixes/email_temp_export.pdf
