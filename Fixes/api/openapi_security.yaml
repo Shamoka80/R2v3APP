@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info: {title: RUR2 Security API, version: 0.1.0}
+paths:
+  /auth/rbac/roles:
+    get: {summary: List roles, responses: {200:{description: ok}}}
+    post: {summary: Create role, responses: {201:{description: created}}}
+  /auth/rbac/assign:
+    post: {summary: Assign role to user, responses: {204:{description: ok}}}
+  /auth/tokens/rotate:
+    post: {summary: Rotate provider token, responses: {200:{description: ok}}}
+  /auth/tokens/revoke:
+    post: {summary: Revoke provider token, responses: {204:{description: ok}}}
+  /audit/logs:
+    get: {summary: List audit logs, responses: {200:{description: ok}}}
