@@ -1,41 +1,65 @@
 {
   "entries": [
     {
-      "seq": "1",
       "type": "purchase",
-      "amount": 1000,
-      "ref": "seed_purchase"
+      "amount": 1000.0,
+      "ref": "seed_purchase",
+      "ts": ""
     },
     {
-      "seq": "2",
       "type": "consume",
-      "amount": -100,
-      "ref": "seed_consume"
+      "amount": -100.0,
+      "ref": "seed_consume",
+      "ts": ""
     },
     {
-      "seq": "3",
+      "type": "purchase",
+      "amount": 100.0,
+      "ref": "test_purchase",
+      "ts": ""
+    },
+    {
+      "type": "issue",
+      "amount": 100.0,
+      "ref": "credit_issue",
+      "ts": ""
+    },
+    {
+      "type": "consume",
+      "amount": 25.0,
+      "ref": "usage_1",
+      "ts": ""
+    },
+    {
+      "type": "adjust+",
+      "amount": 10.0,
+      "ref": "admin_adjust",
+      "ts": ""
+    },
+    {
+      "seq": "7",
       "type": "purchase",
       "amount": 100,
       "ref": "test_purchase"
     },
     {
-      "seq": "4",
+      "seq": "8",
       "type": "issue",
       "amount": 100,
       "ref": "credit_issue"
     },
     {
-      "seq": "5",
+      "seq": "9",
       "type": "consume",
       "amount": 25,
       "ref": "usage_1"
     },
     {
-      "seq": "6",
+      "seq": "10",
       "type": "adjust+",
       "amount": 10,
       "ref": "admin_adjust"
     }
   ],
-  "balance": 185
+  "balance": 270.0
 }
