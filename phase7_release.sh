@@ -58,5 +58,5 @@ PY
 echo "==> Package"
 STAMP=$(date +%Y%m%d%H%M%S)
 PKG="releases/rur2_prelaunch_${STAMP}.tar.gz"
-tar -czf "$PKG" Fixes/api Fixes/contracts Fixes/migrations Fixes/qa Fixes/reports
+tar -czf "$PKG" Fixes/
 echo "PACKAGE $PKG"

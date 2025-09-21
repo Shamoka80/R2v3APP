@@ -31,7 +31,12 @@ bash Fixes/qa/phase6_e2e.sh
 echo "==> Phase 7 release"
 bash phase7_release.sh
 
-echo "==> Cold verify latest package (and local tree)"
+echo "==> Cold verify latest package"
+LATEST_PKG=$(ls -t releases/rur2_prelaunch_*.tar.gz | head -1)
+echo "Verifying package: $LATEST_PKG"
+bash coldver.sh "$LATEST_PKG"
+
+echo "==> Cold verify working tree"
 bash coldver.sh
 
 echo "==> Git push (tags too)"
