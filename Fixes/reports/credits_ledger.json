@@ -63,22 +63,26 @@
     {
       "type": "purchase",
       "amount": 600.0,
-      "ref": "E2E_PHASE5_SCENARIO"
+      "ref": "E2E_PHASE5_SCENARIO",
+      "ts": ""
     },
     {
       "type": "adjust",
       "amount": 100.0,
-      "ref": "E2E_PHASE5_SCENARIO"
+      "ref": "E2E_PHASE5_SCENARIO",
+      "ts": ""
     },
     {
       "type": "consume",
       "amount": -1500.0,
-      "ref": "E2E_PHASE5_SCENARIO"
+      "ref": "E2E_PHASE5_SCENARIO",
+      "ts": ""
     },
     {
       "type": "refund",
       "amount": -65.0,
-      "ref": "E2E_PHASE5_SCENARIO"
+      "ref": "E2E_PHASE5_SCENARIO",
+      "ts": ""
     }
   ],
   "balance": 270.0
