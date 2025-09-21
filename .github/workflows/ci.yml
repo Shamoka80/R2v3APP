@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published, prereleased ]
+  workflow_dispatch:
 
 jobs:
   build_and_verify:

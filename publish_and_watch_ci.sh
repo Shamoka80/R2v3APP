@@ -5,14 +5,21 @@ OWNER=${OWNER:-Shamoka80}
 REPO=${REPO:-R2v3APP}
 WF=${WF:-ci.yml}
 
-echo "==> Ensure latest package exists"
-bash phase7_release.sh >/dev/null 2>&1 || true
+echo "==> Build latest package with templates (permanent fix)"
+bash phase7_release.sh
 
-echo "==> Ensure templates are in package"
-bash patch_pkg.sh >/dev/null
-PKG=$(ls -t releases/*with_templates*.tar.gz 2>/dev/null | head -1)
-[ -n "${PKG:-}" ] || { echo "No patched package found"; exit 1; }
+echo "==> Verify templates are included"
+PKG=$(ls -t releases/rur2_prelaunch_*.tar.gz | head -1)
+[ -f "$PKG" ] || { echo "No package found"; exit 1; }
 echo "PKG: $PKG"
+
+# Verify templates are included in package
+echo "Verifying templates in package..."
+tar -tzf "$PKG" | grep -E "(pdf_temp_export|email_temp_export)" || { echo "Templates missing from package!"; exit 1; }
+echo "✓ Templates confirmed in package"
+
+# Cold verify the package
+bash coldver.sh "$PKG"
 
 TAG="prelaunch-$(date +%Y%m%d%H%M%S)"
 TITLE="RUR2 Prelaunch $(date -u +%F)"
@@ -48,13 +55,14 @@ create_release_gh() {
 }
 
 if command -v gh >/dev/null 2>&1; then
-  create_release_gh || { echo "gh path failed, trying API…"; [ -n "${GITHUB_TOKEN:-}" ] && create_release_api || echo "No token; skipped release upload."; }
+  create_release_gh || { echo "gh path failed, trying API…"; [ -n "${GITHUB_TOKEN:-}" ] && create_release_api || { echo "No GITHUB_TOKEN available for API fallback. Set GITHUB_TOKEN (scopes: repo, workflow) and OWNER/REPO."; exit 1; }; }
 elif [ -n "${GITHUB_TOKEN:-}" ]; then
   create_release_api
 else
-  echo "No gh or GITHUB_TOKEN; tagging only."
-  git tag -a "$TAG" -m "$TITLE" || true
-  git push --tags || true
+  echo "ERROR: GITHUB_TOKEN not set and gh unavailable. Local git operations are disabled in this environment."
+  echo "SOLUTION: Set GITHUB_TOKEN (scopes: repo, workflow) and ensure OWNER/REPO are correct."
+  echo "OWNER=$OWNER, REPO=$REPO"
+  exit 1
 fi
 
 echo "==> Watch CI for $WF on main"
