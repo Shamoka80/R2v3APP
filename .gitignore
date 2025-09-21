@@ -4,3 +4,6 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+# track required templates
+!Fixes/pdf_temp_export.pdf
+!Fixes/email_temp_export.pdf
